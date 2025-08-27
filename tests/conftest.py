@@ -1,18 +1,13 @@
-"""Configuração global para testes pytest.
-
-Este módulo contém fixtures e configurações compartilhadas
-entre todos os testes do projeto BDD Agent.
-"""
+"""Configurações globais para testes pytest."""
 
 import pytest
-from typing import Generator
 from unittest.mock import Mock
 
 
 @pytest.fixture
 def mock_openai_client() -> Mock:
     """Fixture que fornece um cliente OpenAI mockado.
-    
+
     Returns:
         Mock: Cliente OpenAI mockado para testes.
     """
@@ -20,10 +15,10 @@ def mock_openai_client() -> Mock:
     mock_client.chat.completions.create.return_value = Mock(
         choices=[
             Mock(
-                message=Mock(
-                    content="Cenário BDD de exemplo gerado para teste"
-                )
-            )
+                 message=Mock(
+                     content="Cenário BDD de exemplo gerado para teste"
+                 )
+             )
         ]
     )
     return mock_client
@@ -32,7 +27,7 @@ def mock_openai_client() -> Mock:
 @pytest.fixture
 def sample_user_story() -> str:
     """Fixture que fornece uma história de usuário de exemplo.
-    
+
     Returns:
         str: História de usuário para testes.
     """
@@ -46,7 +41,7 @@ def sample_user_story() -> str:
 @pytest.fixture
 def sample_bdd_scenario() -> str:
     """Fixture que fornece um cenário BDD de exemplo.
-    
+
     Returns:
         str: Cenário BDD formatado para testes.
     """
