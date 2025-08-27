@@ -1,264 +1,368 @@
 # 🏗️ System Patterns - BDD Agent
 
-**Última atualização:** 2024-12-19 14:30:00
+**Última atualização:** 2025-08-27 16:19:05
 
 ---
 
-## 🎯 **Arquitetura Geral**
+## 🎯 **Arquitetura e Padrões de Design**
 
-### **Padrão Arquitetural:** Modular Monolith
+### **Arquitetura Geral**
+```mermaid
+graph TB
+    UI[Streamlit UI Layer] --> BDD[BDD Generator Core]
+    BDD --> AI[OpenAI Client Wrapper]
+    BDD --> Parser[Gherkin Parser]
+    AI --> OpenAI[OpenAI API]
+    
+    UI --> Config[Configuration Layer]
+    UI --> Auth[Authentication Module]
+    
+    subgraph "Core Modules"
+        BDD
+        Parser
+        AI
+    end
+    
+    subgraph "Infrastructure"
+        Config
+        Auth
+        Utils[Utilities]
+    end
 ```
-bdd-agent/
-├── src/
-│   ├── auth/              # Módulo de autenticação
-│   ├── config/            # Módulo de configurações
-│   ├── bdd_generator/     # Módulo gerador BDD
-│   ├── ui/                # Módulo interface Streamlit
-│   └── utils/             # Utilitários compartilhados
-├── tests/                 # Testes automatizados
-├── docs/                  # Documentação
-└── pyproject.toml         # Configuração Poetry
-```
 
-## 🔧 **Padrões de Design**
+---
 
-### **1. Separation of Concerns**
-- **Auth Module:** Responsável apenas por autenticação
-- **Config Module:** Gerencia configurações e persistência
-- **BDD Generator:** Lógica de geração via IA
-- **UI Module:** Interface e navegação Streamlit
+## 🏛️ **Padrões Arquiteturais Identificados**
 
-### **2. Dependency Injection**
+### **1. Layered Architecture (Arquitetura em Camadas)**
 ```python
-class BDDGenerator:
-    def __init__(self, openai_client, config_manager):
-        self.client = openai_client
-        self.config = config_manager
+# Camada de Apresentação (UI)
+src/ui/
+├── components/     # Componentes reutilizáveis
+└── pages/         # Páginas específicas
+
+# Camada de Aplicação (Business Logic)
+src/bdd_generator/
+├── generator.py    # Orquestração da geração BDD
+└── openai_client.py # Integração com IA
+
+# Camada de Infraestrutura
+src/config/        # Configurações
+src/auth/          # Autenticação
+src/utils/         # Utilitários
+```
+
+### **2. Wrapper Pattern**
+```python
+# OpenAI Client Wrapper - Encapsula complexidade da API
+class OpenAIClientWrapper:
+    def __init__(self, config: OpenAIConfig)
+    def create_completion(self, messages: list) -> str
+    def validate_api_key(self) -> bool
+    def get_model_info(self) -> Dict
 ```
 
 ### **3. Factory Pattern**
 ```python
-class OpenAIClientFactory:
-    @staticmethod
-    def create_client(api_key: str, model: str):
-        return OpenAI(api_key=api_key, model=model)
+# Configuration Factory para diferentes tipos de modelos
+SUPPORTED_MODELS = {
+    "gpt-4o-mini": {"name": "GPT-4o Mini", "max_tokens": 4096},
+    "gpt-4.1-mini": {"name": "GPT-4.1 Mini", "max_tokens": 4096},
+    # ... mais modelos
+}
 ```
 
-### **4. State Management Pattern**
+---
+
+## 🧩 **Decisões Arquiteturais Principais**
+
+### **DA001 - Pydantic para Validação**
 ```python
-class SessionManager:
-    def __init__(self):
-        self.state = st.session_state
+class BDDScenario(BaseModel):
+    title: str = Field(..., description="Título do cenário")
+    steps: List[str] = Field(..., description="Lista de passos do cenário")
+    scenario_type: str = Field(default="positive", description="Tipo do cenário")
+```
+**Razão**: Validação de tipos em runtime, documentação automática, integração com FastAPI futuro
+
+### **DA002 - Streamlit como Interface**
+```python
+# Escolha de Streamlit vs Flask/FastAPI
+st.set_page_config(
+    page_title="BDD Agent - Gerador de Cenários",
+    page_icon="🧪",
+    layout="wide"
+)
+```
+**Razão**: Prototipagem rápida, foco em UX científica, menos código boilerplate
+
+### **DA003 - Separação de Responsabilidades**
+```python
+# Generator (Orquestração) != Client (Comunicação)
+class BDDGenerator:
+    def __init__(self, api_key: str, model: str)
+    def generate_scenarios(self, user_story: str) -> BDDResponse
+
+class OpenAIClientWrapper:
+    def create_completion(self, messages: list) -> str
+```
+**Razão**: Single Responsibility Principle, testabilidade, flexibilidade para trocar providers IA
+
+### **DA004 - Tratamento de Erros Centralizado**
+```python
+try:
+    response = self.client.chat.completions.create(...)
+    # Process response
+except Exception as e:
+    logger.error(f"Erro ao gerar cenários BDD: {str(e)}")
+    raise
+```
+**Razão**: Logging estruturado, user feedback adequado, debugging facilitado
+
+---
+
+## 🎨 **Padrões de Design Implementados**
+
+### **1. Command Pattern (Implícito)**
+```python
+# Cada geração é um comando encapsulado
+def generate_bdd_scenarios(user_story: str, config: Dict) -> str:
+    # Configurar cliente OpenAI
+    # Criar gerador BDD  
+    # Gerar cenários
+    # Formatar resposta
+```
+
+### **2. Template Method Pattern**
+```python
+def _create_system_prompt(self) -> str:
+    """Template fixo para prompts do sistema"""
     
-    def get(self, key: str, default=None):
-        return self.state.get(key, default)
-    
-    def set(self, key: str, value):
-        self.state[key] = value
+def _create_user_prompt(self, user_story: str, options...) -> str:
+    """Template variável baseado em parâmetros"""
 ```
 
-## 🔐 **Padrões de Segurança**
-
-### **1. Credential Management**
-- API Keys armazenadas em session_state (não em arquivos)
-- Validação de entrada para prevenir injection
-- Sanitização de dados antes de envio para IA
-
-### **2. Authentication Pattern**
+### **3. Strategy Pattern (Parsing)**
 ```python
-def require_auth(func):
-    def wrapper(*args, **kwargs):
-        if not st.session_state.get('authenticated', False):
-            st.error("Acesso negado")
-            return
-        return func(*args, **kwargs)
-    return wrapper
+def _determine_scenario_type(self, title: str, steps: List[str]) -> str:
+    """Estratégias diferentes para classificar cenários"""
+    if any(keyword in title_lower for keyword in negative_keywords):
+        return "negative"
+    elif any(keyword in title_lower for keyword in edge_keywords):
+        return "edge_case"
+    else:
+        return "positive"
 ```
 
-## 📊 **Padrões de Dados**
-
-### **1. Configuration Schema**
+### **4. Builder Pattern (Response Construction)**
 ```python
-@dataclass
-class AppConfig:
-    openai_api_key: str = ""
-    selected_model: str = "gpt-4o-mini"
-    custom_model: str = ""
-    
-    def is_valid(self) -> bool:
-        return bool(self.openai_api_key and 
-                   (self.selected_model or self.custom_model))
+return BDDResponse(
+    feature_name=feature_name,
+    feature_description=feature_description,
+    scenarios=scenarios,
+    gherkin_content=gherkin_content,
+)
 ```
 
-### **2. BDD Response Schema**
+---
+
+## 🔧 **Configurações e Convenções**
+
+### **Naming Conventions**
 ```python
-@dataclass
-class BDDResponse:
-    scenarios: List[str]
-    raw_response: str
-    model_used: str
-    timestamp: datetime
+# Classes: PascalCase
+class BDDGenerator, OpenAIClientWrapper, BDDScenario
+
+# Métodos: snake_case
+def generate_scenarios(), create_completion(), validate_api_key()
+
+# Constantes: UPPER_SNAKE_CASE  
+SUPPORTED_MODELS, DEFAULT_TEMPERATURE
+
+# Arquivos: snake_case
+generator.py, openai_client.py, conftest.py
 ```
 
-## 🎨 **Padrões de Interface**
+### **Code Quality Patterns**
+```toml
+# pyproject.toml - Configurações rigorosas
+[tool.mypy]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+strict_equality = true
 
-### **1. Page Navigation Pattern**
-```python
-class PageManager:
-    PAGES = {
-        "login": LoginPage,
-        "main": MainPage,
-        "config": ConfigPage
-    }
-    
-    def render_page(self, page_name: str):
-        page_class = self.PAGES.get(page_name)
-        if page_class:
-            page_class().render()
+[tool.black]
+line-length = 88
+target-version = ['py39']
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --cov=src --cov-report=term-missing"
 ```
 
-### **2. Component Pattern**
-```python
-class StreamlitComponent:
-    def render(self):
-        raise NotImplementedError
-    
-    def validate(self) -> bool:
-        return True
-```
-
-## 🔄 **Padrões de Fluxo**
-
-### **1. Request-Response Flow**
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant UI as Streamlit UI
-    participant BDD as BDD Generator
-    participant AI as OpenAI API
-    
-    U->>UI: Input text
-    UI->>BDD: Generate BDD
-    BDD->>AI: API Request
-    AI->>BDD: Gherkin Response
-    BDD->>UI: Formatted BDD
-    UI->>U: Display Result
-```
-
-### **2. Configuration Flow**
-```mermaid
-stateDiagram-v2
-    [*] --> NotConfigured
-    NotConfigured --> Configuring: User opens config
-    Configuring --> Configured: Valid API Key + Model
-    Configuring --> NotConfigured: Cancel/Invalid
-    Configured --> Configuring: Edit config
-    Configured --> Ready: Generate BDD
-```
-
-## 🧪 **Padrões de Teste**
-
-### **1. Test Structure**
-```
-tests/
-├── unit/
-│   ├── test_auth.py
-│   ├── test_config.py
-│   └── test_bdd_generator.py
-├── integration/
-│   └── test_openai_integration.py
-└── fixtures/
-    └── sample_responses.py
-```
-
-### **2. Mock Pattern**
-```python
-@pytest.fixture
-def mock_openai_client():
-    with patch('openai.OpenAI') as mock:
-        mock.return_value.chat.completions.create.return_value = \
-            MockResponse("Given...When...Then...")
-        yield mock
-```
-
-## 📝 **Padrões de Documentação**
-
-### **1. Docstring Pattern**
-```python
-def generate_bdd(self, user_input: str) -> BDDResponse:
-    """
-    Gera cenários BDD a partir de entrada do usuário.
-    
-    Args:
-        user_input: Descrição em linguagem natural
-        
-    Returns:
-        BDDResponse com cenários gerados
-        
-    Raises:
-        ConfigurationError: Se API key não configurada
-        OpenAIError: Se erro na chamada da API
-    """
-```
-
-### **2. Error Handling Pattern**
-```python
-class BDDAgentError(Exception):
-    """Base exception para BDD Agent"""
-    pass
-
-class ConfigurationError(BDDAgentError):
-    """Erro de configuração"""
-    pass
-
-class OpenAIError(BDDAgentError):
-    """Erro na integração OpenAI"""
-    pass
-```
-
-## 🔍 **Padrões de Logging**
-
-### **1. Structured Logging**
+### **Logging Pattern**
 ```python
 import logging
-
 logger = logging.getLogger(__name__)
 
-def log_bdd_generation(user_input: str, model: str, success: bool):
+# Logs estruturados com contexto
+logger.info(f"Gerando {num_scenarios} cenários BDD para: {user_story[:50]}...")
+logger.error(f"Erro ao gerar cenários BDD: {str(e)}")
+```
+
+---
+
+## 🚀 **Padrões de Performance**
+
+### **1. Timeout Management**
+```python
+response = self.client.chat.completions.create(
+    model=self.model,
+    messages=messages,
+    timeout=self.config.timeout,  # 30s default
+)
+```
+
+### **2. Token Usage Logging**
+```python
+usage = response.usage
+if usage:
     logger.info(
-        "BDD Generation",
-        extra={
-            "input_length": len(user_input),
-            "model": model,
-            "success": success,
-            "timestamp": datetime.now().isoformat()
-        }
+        f"Tokens usados - Prompt: {usage.prompt_tokens}, "
+        f"Completion: {usage.completion_tokens}"
     )
 ```
 
----
-
-## 🎯 **Decisões Arquiteturais**
-
-### **ADR-001: Streamlit para Interface**
-- **Status:** Aceito
-- **Contexto:** Necessidade de interface rápida e simples
-- **Decisão:** Usar Streamlit para prototipagem rápida
-- **Consequências:** Interface limitada mas desenvolvimento ágil
-
-### **ADR-002: Session State para Persistência**
-- **Status:** Aceito
-- **Contexto:** Simular localStorage em aplicação web
-- **Decisão:** Usar st.session_state para dados temporários
-- **Consequências:** Dados perdidos ao fechar navegador
-
-### **ADR-003: Modular Architecture**
-- **Status:** Aceito
-- **Contexto:** Facilitar manutenção e testes
-- **Decisão:** Separar responsabilidades em módulos
-- **Consequências:** Maior complexidade inicial, melhor manutenibilidade
+### **3. Caching Strategy (Futuro)**
+```python
+# TODO: Implementar cache para cenários similares
+# Pattern identificado para futuras otimizações
+```
 
 ---
 
-**Padrões Implementados:** 0/10
-**Próxima Revisão:** Após implementação inicial
+## 🧪 **Padrões de Teste**
+
+### **Test Structure**
+```python
+# conftest.py - Fixtures centralizadas
+@pytest.fixture
+def mock_openai_client() -> Mock:
+    """Cliente OpenAI mockado para testes"""
+
+@pytest.fixture  
+def sample_user_story() -> str:
+    """História de usuário padrão para testes"""
+```
+
+### **Mocking Pattern**
+```python
+mock_client = Mock()
+mock_client.chat.completions.create.return_value = Mock(
+    choices=[Mock(message=Mock(content="Cenário BDD exemplo"))]
+)
+```
+
+### **Coverage Requirements**
+```toml
+# Cobertura obrigatória configurada
+addopts = "--cov=src --cov-report=term-missing --cov-report=html"
+```
+
+---
+
+## 📚 **Documentação Patterns**
+
+### **Docstring Standard (Google Style)**
+```python
+def generate_scenarios(
+    self,
+    user_story: str,
+    num_scenarios: int = 3,
+    include_negative: bool = True,
+) -> BDDResponse:
+    """Gera cenários BDD a partir de uma história do usuário.
+
+    Args:
+        user_story: História do usuário em linguagem natural
+        num_scenarios: Número de cenários a gerar
+        include_negative: Se deve incluir cenários negativos
+
+    Returns:
+        BDDResponse com os cenários gerados
+
+    Raises:
+        Exception: Se houver erro na chamada da API
+    """
+```
+
+### **Type Hints Obrigatórios**
+```python
+from typing import List, Dict, Optional
+from pydantic import BaseModel, Field
+```
+
+---
+
+## 🔒 **Security Patterns**
+
+### **API Key Validation**
+```python
+def _validate_api_key_format(self, api_key: str) -> bool:
+    """Valida formato básico da API key"""
+    cleaned_key = api_key.strip()
+    return cleaned_key.startswith('sk-') and len(cleaned_key) >= 20
+```
+
+### **Input Sanitization**
+```python
+# Limpeza de inputs na UI
+if api_key_input:
+    cleaned_key = api_key_input.strip()
+    if cleaned_key.startswith('sk-') and len(cleaned_key) >= 20:
+        api_key = cleaned_key
+```
+
+---
+
+## 🎯 **Anti-Patterns Evitados**
+
+### **❌ God Class**
+- Classes com responsabilidades bem definidas
+- BDDGenerator foca apenas em orquestração
+- OpenAIClientWrapper apenas em comunicação
+
+### **❌ Magic Numbers**
+```python
+# ✅ Constantes bem definidas
+DEFAULT_MAX_TOKENS = 2000
+DEFAULT_TEMPERATURE = 0.3
+DEFAULT_TIMEOUT = 30
+```
+
+### **❌ String Concatenation**
+```python
+# ✅ Template strings e f-strings
+prompt = f"""Gere {num_scenarios} cenários BDD para a seguinte história:
+
+{user_story}"""
+```
+
+---
+
+## 🔄 **Evoluções Futuras Identificadas**
+
+### **Patterns para Implementar**
+1. **Observer Pattern**: Para notificações de progresso
+2. **Chain of Responsibility**: Para pipeline de processamento
+3. **Decorator Pattern**: Para features opcionais
+4. **Repository Pattern**: Para persistência de dados
+
+### **Refactorings Planejados**
+1. **Extract Interface**: Para tornar BDDGenerator testável
+2. **Dependency Injection**: Para configurações flexíveis
+3. **Event Sourcing**: Para auditoria de gerações
+4. **Circuit Breaker**: Para robustez na API OpenAI
+
+---
+
+**🏗️ ARQUITETURA**: Sistema bem estruturado seguindo princípios SOLID, com separação clara de responsabilidades e patterns adequados para um MVP escalável.

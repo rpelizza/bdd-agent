@@ -45,12 +45,13 @@ def generate_bdd_scenarios(
         logger.info(f"Iniciando geração de cenários BDD com modelo {model}")
 
         # Configurar cliente OpenAI
-        openai_config = OpenAIConfig(api_key=api_key, model=model, temperature=0.3, max_tokens=2000)
+        openai_config = OpenAIConfig(
+            api_key=api_key, model=model, temperature=0.3, max_tokens=2000)
 
         openai_client = OpenAIClientWrapper(openai_config)
 
         # Criar gerador BDD
-        bdd_generator = BDDGenerator(openai_client)
+        bdd_generator = BDDGenerator(api_key, model)
 
         # Gerar cenários
         response = bdd_generator.generate_scenarios(
@@ -64,17 +65,15 @@ def generate_bdd_scenarios(
         if response.scenarios:
             formatted_scenarios = []
             formatted_scenarios.append("# Cenários BDD Gerados\n")
-            formatted_scenarios.append(f"## Funcionalidade: {response.feature_name}\n")
+            formatted_scenarios.append(
+                f"## Funcionalidade: {response.feature_name}\n")
 
             for i, scenario in enumerate(response.scenarios, 1):
-                formatted_scenarios.append(f"### Cenário {i}: {scenario.name}")
-                formatted_scenarios.append(f"**Dado** {scenario.given}")
+                formatted_scenarios.append(
+                    f"### Cenário {i}: {scenario.title}")
 
-                for when_step in scenario.when:
-                    formatted_scenarios.append(f"**Quando** {when_step}")
-
-                for then_step in scenario.then:
-                    formatted_scenarios.append(f"**Então** {then_step}")
+                for step in scenario.steps:
+                    formatted_scenarios.append(f"    {step}")
 
                 formatted_scenarios.append("")  # Linha em branco
 
@@ -100,12 +99,22 @@ def main() -> None:
         st.header("⚙️ Configurações")
 
         # Verificação da API Key
-        api_key = st.text_input(
-            "OpenAI API Key", type="password", help="Insira sua chave da API OpenAI"
+        api_key_input = st.text_input(
+            "OpenAI API Key", type="password", help="Insira sua chave da API OpenAI (formato: sk-...)"
         )
 
-        if api_key:
-            st.success("✅ API Key configurada")
+        # Limpar e validar a API key
+        api_key = None
+        if api_key_input:
+            # Remove espaços em branco e caracteres especiais
+            cleaned_key = api_key_input.strip()
+
+            # Validar formato básico da API key OpenAI
+            if cleaned_key.startswith('sk-') and len(cleaned_key) >= 20:
+                api_key = cleaned_key
+                st.success("✅ API Key configurada")
+            else:
+                st.error("❌ Formato de API Key inválido. Deve começar com 'sk-'")
         else:
             st.warning("⚠️ Configure sua API Key para continuar")
 
@@ -213,15 +222,16 @@ def main() -> None:
 
                     with col_download:
                         st.download_button(
-                            "📥 Download .feature",
+                            "📥 Download .txt",
                             data=example_scenario,
-                            file_name="cenarios.feature",
+                            file_name="cenarios_bdd.txt",
                             mime="text/plain",
                         )
 
                     with col_copy:
                         if st.button("📋 Copiar para Clipboard"):
-                            st.success("Copiado! (funcionalidade será implementada)")
+                            st.success(
+                                "Copiado! (funcionalidade será implementada)")
         else:
             st.info(
                 "👆 Preencha a história do usuário e clique em " "'Gerar Cenários BDD' para começar!"

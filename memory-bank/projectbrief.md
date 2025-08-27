@@ -1,74 +1,170 @@
 # 📋 Project Brief - BDD Agent
 
-**Última atualização:** 2024-12-19 14:30:00
+**Última atualização:** 2025-08-27 16:19:05
 
 ---
 
-## 🎯 **Objetivo do Projeto**
+## 🎯 **Escopo e Requisitos Fundamentais**
 
-Criar um sistema em Python que auxilie na geração de BDD (Behavior Driven Development) utilizando inteligência artificial.
+### **Nome do Projeto**
+**BDD Agent** - Sistema Python para geração de BDD com IA
 
-## 📝 **Escopo Funcional**
+### **Desenvolvedor**
+Rafael Pelizza (PelizzAI)
 
-### **Funcionalidades Principais:**
-
-1. **Sistema de Autenticação**
-   - Login: `procer`
-   - Senha: `Mbw/E5.r=",6dE`
-   - Tela de login simples e segura
-
-2. **Geração de BDD com IA**
-   - Campo de entrada para texto do usuário
-   - Integração com OpenAI API
-   - Geração automática de cenários BDD em formato Gherkin
-   - Funcionalidade de copiar resultado
-
-3. **Tela de Configurações**
-   - Campo para API Key da OpenAI
-   - Seleção de modelos de IA:
-     - gpt-4.1-mini
-     - gpt-5-mini
-     - gpt-4o-mini
-     - Campo customizável para outros modelos
-   - Persistência no localStorage
-
-4. **Validações e Alertas**
-   - Verificação de API Key configurada
-   - Verificação de modelo selecionado
-   - Alertas informativos ao usuário
-
-## 🛠️ **Stack Tecnológica**
-
-- **Linguagem:** Python
-- **Gerenciador de Pacotes:** Poetry
-- **Framework Web:** Streamlit
-- **IA:** OpenAI API
-- **Persistência:** LocalStorage (via Streamlit session state)
-
-## 📚 **Referência BDD**
-
-Baseado na metodologia BDD conforme: https://www.dtidigital.com.br/blog/bdd-como-metodologia-agil
-
-### **Estrutura Gherkin:**
-- **Given (Dado que):** Condições e pré-condições
-- **When (Quando):** Eventos ou ações
-- **Then (Então):** Resultados esperados
-
-## 🎨 **Requisitos de Interface**
-
-- Interface limpa e intuitiva
-- Navegação simples entre telas
-- Feedback visual para ações do usuário
-- Responsividade básica
-
-## 🔒 **Requisitos de Segurança**
-
-- Autenticação básica implementada
-- API Keys armazenadas de forma segura
-- Validação de entrada de dados
+### **Versão Atual**
+0.1.0
 
 ---
 
-**Status:** 🟡 Planejamento Inicial
-**Prioridade:** P1 - Alta
-**Estimativa:** 2-3 dias de desenvolvimento
+## 🌟 **Objetivo Principal**
+
+Desenvolver uma aplicação web que **automatiza a geração de cenários BDD (Behavior Driven Development)** a partir de histórias de usuário em linguagem natural, utilizando Inteligência Artificial (OpenAI) para criar testes estruturados no formato Gherkin.
+
+---
+
+## 📊 **Requisitos Funcionais**
+
+### **RF01 - Interface Web Intuitiva**
+- Interface Streamlit responsiva e amigável
+- Entrada de texto para histórias de usuário
+- Configurações avançadas (criatividade, tipo de cenários)
+- Download de arquivos .feature
+
+### **RF02 - Geração Inteligente de BDD**
+- Conversão de linguagem natural para formato Gherkin
+- Suporte a cenários positivos, negativos e casos extremos
+- Validação de estrutura BDD (Dado, Quando, Então)
+- Múltiplos cenários por história
+
+### **RF03 - Integração OpenAI**
+- Suporte a múltiplos modelos (GPT-4o-mini, GPT-4-turbo, GPT-3.5-turbo)
+- Configuração de temperatura para criatividade
+- Tratamento de erros e timeout
+- Validação de API key
+
+### **RF04 - Processamento e Validação**
+- Parser de conteúdo Gherkin
+- Classificação de tipos de cenário
+- Extração de metadados (feature name, description)
+- Formatação para download
+
+---
+
+## 📊 **Requisitos Não-Funcionais**
+
+### **RNF01 - Performance**
+- Timeout de 30s para requisições OpenAI
+- Interface responsiva sem travamentos
+- Logging estruturado para debugging
+
+### **RNF02 - Usabilidade**
+- Interface em português brasileiro
+- Feedback visual durante processamento
+- Validação em tempo real de inputs
+
+### **RNF03 - Segurança**
+- API key mascarada na interface
+- Validação de formato de chaves
+- Não persistência de credenciais
+
+### **RNF04 - Qualidade**
+- Cobertura de testes configurada
+- Linting automático (Black, Flake8, MyPy)
+- Tipagem estrita com Pydantic
+
+---
+
+## 🏗️ **Arquitetura Definida**
+
+### **Stack Tecnológico**
+- **Backend**: Python 3.9+
+- **Interface**: Streamlit 1.28+
+- **IA**: OpenAI API 1.3+
+- **Validação**: Pydantic 2.5+
+- **Gerenciamento**: Poetry
+- **Testes**: Pytest + Coverage
+
+### **Estrutura Modular**
+```
+src/
+├── bdd_generator/     # Core BDD generation
+├── auth/             # Autenticação (futuro)
+├── config/           # Configurações
+├── ui/              # Componentes UI
+└── utils/           # Utilitários
+```
+
+---
+
+## 🎯 **Escopo de Entrega**
+
+### **Funcionalidades Implementadas**
+✅ Interface Streamlit funcional  
+✅ Integração completa OpenAI  
+✅ Geração de cenários BDD  
+✅ Parser Gherkin  
+✅ Download de arquivos .feature  
+✅ Configurações avançadas  
+✅ Tratamento de erros  
+
+### **Funcionalidades Planejadas**
+🔄 Sistema de autenticação  
+🔄 Histórico de gerações  
+🔄 Templates personalizados  
+🔄 Exportação múltiplos formatos  
+🔄 Integração com ferramentas BDD  
+
+---
+
+## 📈 **Métricas de Sucesso**
+
+### **Técnicas**
+- Cobertura de testes ≥ 85%
+- Tempo de resposta ≤ 30s
+- Zero erros críticos de produção
+- Tipagem 100% MyPy compliant
+
+### **Usuário**
+- Interface responsiva e intuitiva
+- Cenários BDD válidos e úteis
+- Facilidade de configuração
+- Feedback claro em erros
+
+---
+
+## 🔒 **Restrições e Limitações**
+
+### **Técnicas**
+- Dependência da API OpenAI
+- Limite de tokens por requisição (2000)
+- Python 3.9+ obrigatório
+- Conexão internet necessária
+
+### **Negócio**
+- Custos variáveis por uso da OpenAI
+- Disponibilidade dependente da API externa
+- Qualidade depende do modelo IA utilizado
+
+---
+
+## 📅 **Timeline e Marcos**
+
+### **Fase 1 - MVP Concluído** ✅
+- Interface básica funcional
+- Geração de cenários BDD
+- Integração OpenAI operacional
+
+### **Fase 2 - Melhorias** 🔄
+- Sistema de autenticação
+- Persistência de dados
+- Templates avançados
+
+### **Fase 3 - Integração** 📋
+- APIs para ferramentas externas
+- Webhooks e automações
+- Dashboard de métricas
+
+---
+
+**📌 IMPORTANTE**: Este project brief reflete o estado atual analisado do código em 2025-08-27. Todas as funcionalidades listadas como implementadas foram verificadas na base de código existente.

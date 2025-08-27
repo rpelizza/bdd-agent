@@ -1,378 +1,286 @@
-# 🎯 Project Rules - BDD Agent
+# .projectrules - BDD Agent Specific Patterns
 
-**Última atualização:** 2024-12-19 14:30:00
-
----
-
-## 🐍 **Python Standards**
-
-### **Code Style:**
-- **PEP 8** compliance obrigatório
-- **Line length:** 88 caracteres (Black standard)
-- **Imports:** Organizados por isort (stdlib, third-party, local)
-- **Type hints:** Obrigatórios em todas as funções públicas
-- **Docstrings:** Formato Google para todas as funções/classes públicas
-
-### **Naming Conventions:**
-```python
-# Classes: PascalCase
-class BDDGenerator:
-    pass
-
-# Functions/Variables: snake_case
-def generate_bdd_scenarios():
-    user_input = "example"
-
-# Constants: UPPER_SNAKE_CASE
-DEFAULT_MODEL = "gpt-4o-mini"
-
-# Private: _leading_underscore
-def _internal_helper():
-    pass
-```
-
-### **Error Handling:**
-```python
-# Custom exceptions hierarchy
-class BDDAgentError(Exception):
-    """Base exception"""
-    pass
-
-class ConfigurationError(BDDAgentError):
-    """Configuration related errors"""
-    pass
-
-# Always use specific exceptions
-raise ConfigurationError("API key not configured")
-# Never: raise Exception("error")
-```
+**Inicializado**: 2025-08-27 16:19:05  
+**Projeto**: BDD Agent - Sistema Python para geração de BDD com IA  
+**Desenvolvedor**: Rafael Pelizza (PelizzAI)
 
 ---
 
-## 🏗️ **Architecture Rules**
+## 🎯 **Padrões Específicos do Projeto BDD Agent**
 
-### **Module Structure:**
-- **Single Responsibility:** Cada módulo tem uma responsabilidade clara
-- **Dependency Injection:** Evitar dependências hardcoded
-- **Interface Segregation:** Interfaces pequenas e específicas
-- **No Circular Imports:** Estrutura hierárquica clara
+### **Arquitetura e Estrutura**
 
-### **Layer Dependencies:**
-```
-UI Layer (Streamlit)
-    ↓
-Business Layer (BDD Generator, Auth)
-    ↓
-Data Layer (Config, Session)
-    ↓
-Utils Layer (Exceptions, Validators)
-```
-
-### **File Organization:**
+#### **Organização Modular Descoberta**
 ```python
-# Order within files:
-1. Module docstring
-2. Imports (stdlib, third-party, local)
-3. Constants
-4. Type definitions
-5. Classes
-6. Functions
-7. Main execution (if __name__ == "__main__")
+# Padrão: Separação clara entre apresentação, lógica e integração
+src/
+├── main.py                 # ✅ Entry point - Streamlit UI only
+├── bdd_generator/         # ✅ Core business logic
+│   ├── generator.py       # ✅ BDD orchestration
+│   └── openai_client.py   # ✅ External API wrapper
+├── [auth|config|ui|utils]/ # 📋 Placeholders bem organizados
 ```
 
----
+#### **Responsabilidades Bem Definidas**
+- **main.py**: APENAS interface Streamlit, delegação para core
+- **generator.py**: APENAS orquestração BDD, não conhece UI
+- **openai_client.py**: APENAS comunicação API, não conhece negócio
 
-## 🧪 **Testing Rules**
+### **Padrões OpenAI Integration**
 
-### **Coverage Requirements:**
-- **Minimum:** 80% code coverage
-- **Critical paths:** 100% coverage (auth, BDD generation)
-- **Test types:** Unit (70%), Integration (25%), E2E (5%)
-
-### **Test Structure:**
+#### **API Key Validation Pattern**
 ```python
-# Test naming: test_[function]_[scenario]_[expected]
-def test_generate_bdd_valid_input_returns_scenarios():
-    # Arrange
-    generator = BDDGenerator(mock_client, mock_config)
-    user_input = "User wants to login"
+# Padrão específico descoberto: validação sk- + length
+def _validate_api_key_format(self, api_key: str) -> bool:
+    cleaned_key = api_key.strip()
+    return cleaned_key.startswith('sk-') and len(cleaned_key) >= 20
+
+# UI: Validação em tempo real + feedback visual
+if cleaned_key.startswith('sk-') and len(cleaned_key) >= 20:
+    st.success("✅ API Key configurada")
+else:
+    st.error("❌ Formato de API Key inválido")
+```
+
+#### **Model Configuration Strategy**
+```python
+# Padrão: Modelos hardcoded com metadata rico
+SUPPORTED_MODELS = {
+    "gpt-4o-mini": {"name": "GPT-4o Mini", "max_tokens": 4096, "cost_per_1k": 0.00015},
+    "gpt-4.1-mini": {"name": "GPT-4.1 Mini", "max_tokens": 4096, "cost_per_1k": 0.0001},
+    # Novos modelos incluindo versões futuras gpt-5-mini, gpt-4.1-nano
+}
+```
+
+#### **Error Handling + Logging Pattern**
+```python
+# Padrão: Try-catch com logging estruturado + re-raise
+try:
+    response = self.client.chat.completions.create(...)
+    logger.info(f"Tokens usados - Prompt: {usage.prompt_tokens}")
+except Exception as e:
+    logger.error(f"Erro na API OpenAI: {str(e)}")
+    raise  # Always re-raise for caller handling
+```
+
+### **Streamlit UI Patterns**
+
+#### **Layout Pattern Descoberto**
+```python
+# Padrão: Sidebar para config + main em colunas
+with st.sidebar:
+    # Configurações IA, validações
     
-    # Act
-    result = generator.generate_bdd(user_input)
-    
-    # Assert
-    assert len(result.scenarios) > 0
-    assert "Given" in result.scenarios[0]
+col1, col2 = st.columns([1, 1])
+with col1:
+    # Input do usuário
+with col2:
+    # Output/resultados
 ```
 
-### **Mocking Strategy:**
-- **External APIs:** Always mocked (OpenAI)
-- **File system:** Mocked in unit tests
-- **Database:** Use in-memory or fixtures
-- **Time:** Mock datetime for deterministic tests
-
----
-
-## 🔒 **Security Rules**
-
-### **API Key Management:**
+#### **State Management Pattern**
 ```python
-# ✅ Correct
-api_key = st.session_state.get('openai_api_key', '')
-if not api_key:
-    st.error("API key required")
-    return
-
-# ❌ Never
-api_key = "sk-hardcoded-key"  # Never hardcode
-print(f"Using key: {api_key}")  # Never log keys
+# Padrão: session_state para configurações + validação condicional
+config = {
+    "incluir_negativos": st.session_state.get("incluir_negativos", True),
+    "casos_extremos": st.session_state.get("casos_extremos", False),
+    "num_cenarios": st.session_state.get("num_cenarios", 3),
+}
 ```
 
-### **Input Validation:**
+#### **Feedback Visual Pattern**
 ```python
-# Always validate user input
-from pydantic import BaseModel, validator
-
-class UserInput(BaseModel):
-    text: str
+# Padrão: Loading + Success/Error com contexto
+with st.spinner("🤖 Gerando cenários BDD..."):
+    # Processing
     
-    @validator('text')
-    def validate_text(cls, v):
-        if not v.strip():
-            raise ValueError('Text cannot be empty')
-        if len(v) > 2000:
-            raise ValueError('Text too long')
-        return v.strip()
+if success:
+    st.success("✅ Cenários gerados com sucesso!")
+    st.markdown(result)
+else:
+    st.error(f"❌ Erro na geração: {str(e)}")
 ```
 
-### **Authentication:**
-- **Session-based:** Use st.session_state for auth state
-- **No plaintext passwords:** Even for demo (use hashing)
-- **Timeout:** Implement session timeout
-- **Route protection:** Decorator pattern for protected pages
+### **BDD-Specific Patterns**
 
----
-
-## 🎨 **Streamlit Rules**
-
-### **State Management:**
+#### **Gherkin Template Strategy**
 ```python
-# ✅ Centralized state management
-class SessionManager:
-    def __init__(self):
-        self.state = st.session_state
-    
-    def get(self, key: str, default=None):
-        return self.state.get(key, default)
-    
-    def set(self, key: str, value):
-        self.state[key] = value
+# Padrão: Template system prompt em português + user prompt dinâmico
+system_prompt = """
+Você é um especialista em BDD...
+Regras importantes:
+1. Use SEMPRE português brasileiro
+2. Siga a estrutura: Funcionalidade, Cenário, Dado, Quando, Então, E
+"""
 
-# ❌ Direct session_state access scattered
-st.session_state.user_data = data  # Avoid
-```
-
-### **Page Structure:**
-```python
-# Standard page template
-def render_page():
-    # 1. Authentication check
-    if not is_authenticated():
-        st.error("Access denied")
-        return
-    
-    # 2. Page header
-    st.title("Page Title")
-    
-    # 3. Main content
-    render_main_content()
-    
-    # 4. Footer/actions
-    render_actions()
-```
-
-### **Component Rules:**
-- **Reusable components:** Create functions for repeated UI elements
-- **State isolation:** Components shouldn't directly modify global state
-- **Error boundaries:** Handle errors gracefully with st.error()
-- **Loading states:** Show progress for long operations
-
----
-
-## 📦 **Dependency Rules**
-
-### **Poetry Management:**
-```toml
-# Group dependencies logically
-[tool.poetry.dependencies]
-python = "^3.9"
-streamlit = "^1.28.0"  # Pin major versions
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.4.0"
-black = "^23.9.0"
-
-[tool.poetry.group.test.dependencies]
-pytest-cov = "^4.1.0"
-```
-
-### **Import Rules:**
-```python
-# Order: stdlib, third-party, local
-import os
-import sys
-from datetime import datetime
-
-import streamlit as st
-from openai import OpenAI
-from pydantic import BaseModel
-
-from src.config.settings import AppConfig
-from src.utils.exceptions import BDDAgentError
-```
-
----
-
-## 📚 **Documentation Rules**
-
-### **Docstring Format (Google Style):**
-```python
-def generate_bdd(self, user_input: str) -> BDDResponse:
-    """Generate BDD scenarios from user input.
-    
-    Args:
-        user_input: Natural language description of the feature.
-        
-    Returns:
-        BDDResponse containing generated scenarios and metadata.
-        
-    Raises:
-        ConfigurationError: If OpenAI API key is not configured.
-        OpenAIError: If API call fails.
-        
-    Example:
-        >>> generator = BDDGenerator(client, config)
-        >>> response = generator.generate_bdd("User login")
-        >>> print(response.scenarios[0])
-        Given a user wants to login...
-    """
-```
-
-### **README Structure:**
-1. **Project description**
-2. **Installation instructions**
-3. **Usage examples**
-4. **Configuration**
-5. **Development setup**
-6. **Contributing guidelines**
-7. **License**
-
----
-
-## 🔍 **Code Review Rules**
-
-### **Before Commit:**
-```bash
-# Run quality checks
-poetry run black src tests
-poetry run isort src tests
-poetry run flake8 src tests
-poetry run mypy src
-poetry run pytest --cov=src
-```
-
-### **Commit Messages:**
-```
-# Format: type(scope): description
-feat(auth): add session timeout functionality
-fix(bdd): handle empty API responses
-docs(readme): update installation instructions
-test(generator): add integration tests for OpenAI
-refactor(ui): extract reusable components
-```
-
-### **Pull Request Checklist:**
-- [ ] Tests pass (pytest)
-- [ ] Coverage ≥ 80%
-- [ ] Linting passes (flake8)
-- [ ] Type checking passes (mypy)
-- [ ] Documentation updated
-- [ ] No hardcoded secrets
-- [ ] Error handling implemented
-
----
-
-## 🚀 **Performance Rules**
-
-### **Streamlit Optimization:**
-```python
-# ✅ Cache expensive operations
-@st.cache_data
-def load_model_config():
-    return load_config_from_file()
-
-# ✅ Use session state for persistence
-if 'bdd_cache' not in st.session_state:
-    st.session_state.bdd_cache = {}
-
-# ❌ Avoid recreating objects
-# Don't create new OpenAI client on every request
-```
-
-### **API Usage:**
-- **Rate limiting:** Implement delays between API calls
-- **Caching:** Cache responses for identical inputs
-- **Timeouts:** Set reasonable timeouts for API calls
-- **Error retry:** Implement exponential backoff
-
----
-
-## 🎯 **BDD-Specific Rules**
-
-### **Gherkin Generation:**
-```python
-# Standard BDD template
-BDD_SYSTEM_PROMPT = """
-You are a BDD expert. Generate Gherkin scenarios using:
-- Given: Initial context/preconditions
-- When: Action/event that triggers behavior
-- Then: Expected outcome/result
-
-Format:
-Scenario: [Descriptive name]
-  Given [context]
-  When [action]
-  Then [expected result]
+user_prompt = f"""Gere {num_scenarios} cenários BDD para:
+{user_story}
+[Configurações dinâmicas baseadas em flags]
 """
 ```
 
-### **Quality Criteria:**
-- **Scenarios:** Must have Given-When-Then structure
-- **Language:** Clear, business-friendly language
-- **Specificity:** Concrete examples, not abstract descriptions
-- **Testability:** Each scenario should be testable
+#### **Scenario Classification Logic**
+```python
+# Padrão: Keyword-based classification
+negative_keywords = ["erro", "inválido", "falha", "negativo", "incorreto"]
+edge_keywords = ["limite", "extremo", "máximo", "mínimo", "vazio"]
+
+# Busca em title + steps para classificação automática
+```
+
+#### **Parsing Strategy**
+```python
+# Padrão: Line-by-line parsing com state machine
+current_scenario = None
+current_steps = []
+
+for line in lines:
+    if line.startswith("Cenário:"):
+        # Save previous, start new
+    elif line.startswith(("Dado", "Quando", "Então", "E", "Mas")):
+        current_steps.append(line)
+```
+
+### **Quality Patterns Específicos**
+
+#### **Python Version Constraint**
+```toml
+# Padrão específico: Exclusão da versão 3.9.7
+python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
+# Razão: Possível incompatibilidade conhecida
+```
+
+#### **Pydantic Model Pattern**
+```python
+# Padrão: Field descriptions em português para self-documentation
+class BDDScenario(BaseModel):
+    title: str = Field(..., description="Título do cenário")
+    steps: List[str] = Field(..., description="Lista de passos do cenário")
+    scenario_type: str = Field(default="positive", description="Tipo do cenário")
+```
+
+#### **Testing Strategy Pattern**
+```python
+# Padrão: Mock OpenAI com response structure específica
+mock_client.chat.completions.create.return_value = Mock(
+    choices=[Mock(message=Mock(content="Cenário BDD exemplo"))],
+    usage=Mock(prompt_tokens=100, completion_tokens=200)
+)
+```
+
+### **Naming and Documentation**
+
+#### **File Naming Convention**
+- **snake_case**: generator.py, openai_client.py, conftest.py
+- **Descriptive**: Nomes que indicam responsabilidade clara
+
+#### **Class/Method Naming**
+- **Classes**: PascalCase + Descriptive (BDDGenerator, OpenAIClientWrapper)
+- **Methods**: snake_case + verb_noun (generate_scenarios, create_completion)
+- **Private**: Single underscore (_create_system_prompt, _parse_scenarios)
+
+#### **Docstring Pattern (Google Style)**
+```python
+def generate_scenarios(
+    self,
+    user_story: str,
+    num_scenarios: int = 3,
+) -> BDDResponse:
+    """Gera cenários BDD a partir de uma história do usuário.
+
+    Args:
+        user_story: História do usuário em linguagem natural
+        num_scenarios: Número de cenários a gerar
+
+    Returns:
+        BDDResponse com os cenários gerados
+
+    Raises:
+        Exception: Se houver erro na chamada da API
+    """
+```
 
 ---
 
-## 🔧 **Development Workflow**
+## 🚀 **Decisões Arquiteturais Específicas**
 
-### **Feature Development:**
-1. **Create task** in memory-bank/tasks/
-2. **Write tests** first (TDD approach)
-3. **Implement** minimum viable solution
-4. **Refactor** for quality and performance
-5. **Update documentation**
-6. **Run quality checks**
-7. **Update memory-bank**
+### **DA001 - Streamlit over FastAPI**
+**Decisão**: Usar Streamlit para MVP ao invés de FastAPI  
+**Razão**: Prototipagem rápida, foco em UX, menos código boilerplate  
+**Trade-off**: Single-user sessions vs. multi-user scalability
 
-### **Branch Strategy:**
-- **main:** Production-ready code
-- **develop:** Integration branch
-- **feature/xxx:** Feature development
-- **hotfix/xxx:** Critical fixes
+### **DA002 - OpenAI over Local Models**
+**Decisão**: Integração direta com OpenAI API  
+**Razão**: Qualidade superior, menor complexidade de infra  
+**Trade-off**: Dependência externa vs. controle total
+
+### **DA003 - Pydantic for All Models**
+**Decisão**: Usar Pydantic para toda validação de dados  
+**Razão**: Type safety, documentação automática, JSON serialization  
+**Impact**: Zero tolerance para dados não tipados
+
+### **DA004 - No Database in MVP**
+**Decisão**: Aplicação stateless sem persistência  
+**Razão**: Simplicidade, deploy fácil, foco em core features  
+**Future**: Database será adicionado em versões futuras
 
 ---
 
-**Enforcement:** Automated via pre-commit hooks and CI/CD
-**Updates:** Rules evolve with project needs
-**Compliance:** Mandatory for all code contributions
+## 🔧 **Configurações Preferidas**
+
+### **Development Workflow**
+- **Poetry** para dependency management (não pip)
+- **Black** line-length=88 (padrão do projeto)
+- **MyPy** strict mode obrigatório
+- **Pytest** com coverage ≥85%
+
+### **Code Style Preferences**
+- **Portuguese docstrings** para domínio específico
+- **English code/variables** para padrões técnicos
+- **Structured logging** com contexto
+- **Exception re-raising** após logging
+
+### **UI/UX Preferences**
+- **Wide layout** Streamlit para aproveitar espaço
+- **Emoji icons** para visual feedback (🧪, ✅, ❌, 🤖)
+- **Real-time validation** ao invés de submit validation
+- **Portuguese interface** para usuário brasileiro
+
+---
+
+## 📊 **Performance Patterns**
+
+### **OpenAI API Optimization**
+- **Timeout**: 30s default (não muito baixo, não muito alto)
+- **Max tokens**: 2000 (suficiente para cenários BDD)
+- **Temperature**: 0.3 default (criatividade controlada)
+
+### **UI Response Patterns**
+- **st.spinner** para operações >1s
+- **Session state** para evitar re-computação
+- **Caching strategy** planejada para futuro
+
+---
+
+## 🎯 **Evolution Guidelines**
+
+### **When Adding Features**
+1. **Manter separação** UI vs. Logic vs. Integration
+2. **Usar Pydantic** para novos data models
+3. **Documentar em português** aspectos de negócio
+4. **Testar com mock** para componentes externos
+
+### **When Refactoring**
+1. **Preservar interfaces** públicas existentes
+2. **Manter backward compatibility** quando possível
+3. **Documentar breaking changes** no memory bank
+
+### **Future Architecture Evolution**
+1. **FastAPI backend** quando escalabilidade for necessária
+2. **Database layer** quando persistência for crítica
+3. **Auth system** quando multi-user for implementado
+4. **Cache layer** quando performance for gargalo
+
+---
+
+**🎯 IMPORTANTE**: Estes padrões foram descobertos através da análise da base de código existente em 2025-08-27. Eles refletem as decisões e preferências já implementadas pelo desenvolvedor Rafael Pelizza.

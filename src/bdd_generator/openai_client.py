@@ -42,11 +42,32 @@ class OpenAIClientWrapper:
             config: Configuração do cliente OpenAI
         """
         self.config = config
+        
+        # Validar formato da API key
+        if not self._validate_api_key_format(config.api_key):
+            raise ValueError("Formato de API key inválido. Deve começar com 'sk-' e ter pelo menos 20 caracteres.")
+        
         self.client = OpenAI(api_key=config.api_key)
 
         # Validar modelo
         if config.model not in self.SUPPORTED_MODELS:
             logger.warning(f"Modelo {config.model} não está na lista de suportados")
+    
+    def _validate_api_key_format(self, api_key: str) -> bool:
+        """Valida o formato básico da API key.
+        
+        Args:
+            api_key: A chave da API para validar
+            
+        Returns:
+            True se o formato é válido, False caso contrário
+        """
+        if not api_key or not isinstance(api_key, str):
+            return False
+            
+        # Remove espaços e verifica formato
+        cleaned_key = api_key.strip()
+        return cleaned_key.startswith('sk-') and len(cleaned_key) >= 20
 
     def create_completion(
         self, messages: list, temperature: Optional[float] = None, max_tokens: Optional[int] = None
