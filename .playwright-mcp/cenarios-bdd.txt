@@ -1,0 +1,34 @@
+# Cenários BDD Gerados
+
+## Funcionalidade: Equipar itens mágicos no personagem
+
+### Cenário 1: Equipar item mágico com sucesso
+    Dado que o personagem possui um item mágico disponível
+    Quando o jogador equipar o item mágico no personagem
+    Então os atributos do personagem são aumentados
+    E o personagem está pronto para enfrentar inimigos mais poderosos
+
+### Cenário 2: Tentar equipar item mágico inexistente
+    Dado que o personagem não possui o item mágico desejado
+    Quando o jogador tentar equipar o item mágico inexistente
+    Então uma mensagem de erro é exibida informando que o item não está disponível
+
+### Cenário 3: Tentar equipar item mágico em slot ocupado
+    Dado que o personagem já possui um item equipado no mesmo slot
+    Quando o jogador tentar equipar um novo item mágico no slot ocupado
+    Então uma mensagem de erro é exibida informando que o slot já está ocupado
+
+### Cenário 4: Tentar equipar item mágico com nível superior ao do personagem
+    Dado que o item mágico possui um nível superior ao do personagem
+    Quando o jogador tentar equipar o item mágico
+    Então uma mensagem de erro é exibida informando que o nível do item é muito alto para o personagem
+
+### Cenário 5: Tentar equipar item mágico em slot inexistente
+    Dado que o personagem tenta equipar um item mágico em um slot inexistente
+    Quando o jogador realizar a ação
+    Então uma mensagem de erro é exibida informando que o slot não existe
+
+### Cenário 6: Tentar equipar item mágico em personagem sem atributos
+    Dado que o personagem não possui atributos
+    Quando o jogador tentar equipar um item mágico
+    Então uma mensagem de erro é exibida informando que o personagem não possui atributos para equipar o item

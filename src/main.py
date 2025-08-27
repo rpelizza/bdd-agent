@@ -123,7 +123,7 @@ def main() -> None:
         # Configurações do modelo
         st.subheader("🧠 Modelo IA")
         st.selectbox(
-            "Modelo OpenAI", ["gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"], index=0, key="modelo"
+            "Modelo OpenAI", ["gpt-5-mini", "gpt-4.1-mini", "gpt-4o-mini"], index=0, key="modelo"
         )
 
         st.slider(
@@ -202,7 +202,7 @@ def main() -> None:
                             "num_cenarios": st.session_state.get("num_cenarios", 3),
                         }
 
-                        model = st.session_state.get("modelo", "gpt-4o-mini")
+                        model = st.session_state.get("modelo", "gpt-5-mini")
 
                         # Gerar cenários usando a função real
                         example_scenario = generate_bdd_scenarios(
