@@ -264,6 +264,14 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 
 ## 🔄 **Changelog**
 
+### **v0.1.1 (2025-08-28)** - Critical Bug Fixes
+- 🔥 **CRÍTICO**: Parser BDD corrigido (blocos markdown)
+- ✅ **Configurações**: Número de cenários 100% preciso
+- ✅ **Multi-Agent**: Limites por agente respeitados
+- ✅ **Paridade**: Cenários negativos/edge cases em ambos os modos
+- ✅ **Testes**: Validação completa via Playwright
+- ✅ **Confiabilidade**: Sistema 100% funcional
+
 ### **v0.1.0 (2025-08-27)**
 - ✅ MVP completo com single e multi-agent
 - ✅ Interface Streamlit responsiva
