@@ -113,11 +113,27 @@ Contexto da colaboração:
 Cenários já gerados por outros agentes:
 {chr(10).join(agent_input.previous_scenarios) if agent_input.previous_scenarios else 'Nenhum cenário prévio'}
 
-IMPORTANTE: Como {self.role.value}, gere NO MÁXIMO {max_scenarios} cenário(s) focados na sua especialidade e forneça:
-1. Cenários BDD específicos (formato Gherkin)
-2. Insights importantes para esta funcionalidade
-3. Preocupações que devem ser consideradas
-4. Sugestões para outros membros da equipe
+REGRAS OBRIGATÓRIAS:
+- Gere EXATAMENTE {max_scenarios} cenário(s) BDD, nem mais nem menos
+- Cada cenário deve começar com "Cenário X:" onde X é o número
+- Use formato Gherkin correto (Dado, Quando, Então, E)
+- Foque na sua especialidade como {self.role.value}
+
+ESTRUTURA ESPERADA:
+Cenário 1: [título do cenário]
+  Dado [condição inicial]
+  Quando [ação]
+  Então [resultado esperado]
+
+Cenário 2: [título do cenário] (apenas se max_scenarios > 1)
+  Dado [condição inicial]
+  Quando [ação]
+  Então [resultado esperado]
+
+SEÇÕES ADICIONAIS:
+1. Insights importantes para esta funcionalidade
+2. Preocupações que devem ser consideradas  
+3. Sugestões para outros membros da equipe
 """
         return prompt
 
@@ -145,8 +161,9 @@ IMPORTANTE: Como {self.role.value}, gere NO MÁXIMO {max_scenarios} cenário(s) 
             if not line:
                 continue
 
+            # Contexto: Parser mais específico para cenários, similar ao single agent
             # Identificar seções
-            if "cenário" in line.lower() and ":" in line:
+            if line.lower().startswith("cenário") and ":" in line:
                 if current_scenario:
                     scenarios.append('\n'.join(current_scenario))
                 current_scenario = [line]

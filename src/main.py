@@ -558,20 +558,15 @@ def main() -> None:
                 st.markdown(example_scenario)
 
                 # Botões de ação
-                col_download, col_copy = st.columns(2)
+                col_download = st.columns(1)
 
-                with col_download:
+                with col_download[0]:
                     st.download_button(
                         "📥 Download .txt",
                         data=example_scenario,
                         file_name="cenarios_bdd.txt",
                         mime="text/plain",
                     )
-
-                with col_copy:
-                    if st.button("📋 Copiar para Clipboard"):
-                        st.success(
-                            "Copiado! (funcionalidade será implementada)")
     else:
         st.info(
             "👆 Preencha a história do usuário e clique em 'Gerar Cenários BDD' para começar!"
