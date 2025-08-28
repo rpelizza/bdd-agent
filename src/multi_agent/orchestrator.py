@@ -134,7 +134,8 @@ class MultiAgentOrchestrator:
                     "total_rounds": config.collaboration_rounds,
                     "max_scenarios_per_agent": config.max_scenarios_per_agent,
                     "include_negative": config.include_negative,
-                    "include_edge_cases": config.include_edge_cases
+                    "include_edge_cases": config.include_edge_cases,
+                    "temperature": config.temperature
                 },
                 previous_scenarios=all_scenarios.copy()
             )

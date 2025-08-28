@@ -196,6 +196,7 @@ def generate_bdd_scenarios(
             num_scenarios=config.get("num_cenarios", 5),
             include_negative=config.get("incluir_negativos", False),
             include_edge_cases=config.get("casos_extremos", False),
+            temperature=config.get("criatividade", 0.3),
         )
 
         # Formatar resposta
@@ -528,7 +529,8 @@ def main() -> None:
                                 "max_scenarios_per_agent": max_scenarios,
                                 "include_cross_validation": True,
                                 "include_negative": st.session_state.get("incluir_negativos", True),
-                                "include_edge_cases": st.session_state.get("casos_extremos", False)
+                                "include_edge_cases": st.session_state.get("casos_extremos", False),
+                                "temperature": st.session_state.get("criatividade", 0.5)
                             }
 
                             # Gerar usando multi-agente (async)
@@ -541,6 +543,7 @@ def main() -> None:
                             "incluir_negativos": st.session_state.get("incluir_negativos", True),
                             "casos_extremos": st.session_state.get("casos_extremos", False),
                             "num_cenarios": st.session_state.get("num_cenarios", 3),
+                            "criatividade": st.session_state.get("criatividade", 0.5),
                         }
 
                         # Gerar cenários usando single agent

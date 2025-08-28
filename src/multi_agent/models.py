@@ -68,6 +68,12 @@ class CollaborationConfig(BaseModel):
         default=False,
         description="Se deve incluir casos extremos/limite"
     )
+    temperature: float = Field(
+        default=0.3,
+        ge=0.0,
+        le=1.0,
+        description="Temperatura para criatividade da IA (0.0 a 1.0)"
+    )
 
 
 class MultiAgentResponse(BaseModel):

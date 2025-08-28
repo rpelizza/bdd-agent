@@ -55,13 +55,16 @@ class BaseAgent(ABC):
             logger.info(
                 f"Agente {self.role.value} analisando história: {agent_input.user_story[:50]}...")
 
+            # Contexto: Usar temperatura do context, com fallback para 0.3
+            temperature = agent_input.context.get("temperature", 0.3)
+
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                # temperature=1.0,  # gpt-5-mini only supports default
+                temperature=temperature,
                 max_completion_tokens=1500
             )
 
