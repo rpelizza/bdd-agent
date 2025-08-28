@@ -195,3 +195,5 @@ memory-bank/logs/*.txt
 .cursor/
 .qoder/
 .augment/
+memory-bank/
+.projectrules
