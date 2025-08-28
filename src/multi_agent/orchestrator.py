@@ -129,8 +129,13 @@ class MultiAgentOrchestrator:
             # Preparar input para os agentes
             agent_input = AgentInput(
                 user_story=user_story,
-                context={"round": round_num + 1,
-                         "total_rounds": config.collaboration_rounds},
+                context={
+                    "round": round_num + 1,
+                    "total_rounds": config.collaboration_rounds,
+                    "max_scenarios_per_agent": config.max_scenarios_per_agent,
+                    "include_negative": config.include_negative,
+                    "include_edge_cases": config.include_edge_cases
+                },
                 previous_scenarios=all_scenarios.copy()
             )
 

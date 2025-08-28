@@ -82,17 +82,38 @@ class BaseAgent(ABC):
 
     def _create_user_prompt(self, agent_input: AgentInput) -> str:
         """Cria o prompt do usuário baseado no input."""
+        context = agent_input.context or {}
+        max_scenarios = context.get("max_scenarios_per_agent", 3)
+        include_negative = context.get("include_negative", False)
+        include_edge_cases = context.get("include_edge_cases", False)
+
         prompt = f"""
 História do usuário para análise:
 {agent_input.user_story}
 
-Contexto adicional:
-{agent_input.context if agent_input.context else 'Nenhum contexto adicional'}
+REQUISITOS DE GERAÇÃO:
+- Gere NO MÁXIMO {max_scenarios} cenário(s) BDD do seu papel ({self.role.value})
+- Use formato Gherkin correto (português brasileiro)"""
+
+        # Adicionar requisitos específicos baseados nas configurações
+        requirements = []
+        if include_negative:
+            requirements.append("cenários de erro/validação/falha")
+        if include_edge_cases:
+            requirements.append("casos extremos/limite/valores limítrofes")
+
+        if requirements:
+            prompt += f"\n- Incluir: {', '.join(requirements)}"
+
+        prompt += f"""
+
+Contexto da colaboração:
+{context if context else 'Nenhum contexto adicional'}
 
 Cenários já gerados por outros agentes:
 {chr(10).join(agent_input.previous_scenarios) if agent_input.previous_scenarios else 'Nenhum cenário prévio'}
 
-Por favor, analise esta história do usuário sob a perspectiva do seu papel ({self.role.value}) e gere:
+IMPORTANTE: Como {self.role.value}, gere NO MÁXIMO {max_scenarios} cenário(s) focados na sua especialidade e forneça:
 1. Cenários BDD específicos (formato Gherkin)
 2. Insights importantes para esta funcionalidade
 3. Preocupações que devem ser consideradas

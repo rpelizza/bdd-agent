@@ -56,7 +56,9 @@ async def generate_multi_agent_bdd_scenarios(
             collaboration_rounds=config.get("collaboration_rounds", 1),
             max_scenarios_per_agent=config.get("max_scenarios_per_agent", 3),
             include_cross_validation=config.get(
-                "include_cross_validation", True)
+                "include_cross_validation", True),
+            include_negative=config.get("include_negative", False),
+            include_edge_cases=config.get("include_edge_cases", False)
         )
 
         # Gerar cenários
@@ -185,12 +187,6 @@ def generate_bdd_scenarios(
     try:
         logger.info(f"Iniciando geração de cenários BDD com modelo {model}")
 
-        # Configurar cliente OpenAI
-        openai_config = OpenAIConfig(
-            api_key=api_key, model=model, temperature=0.3, max_tokens=2000)
-
-        openai_client = OpenAIClientWrapper(openai_config)
-
         # Criar gerador BDD
         bdd_generator = BDDGenerator(api_key, model)
 
@@ -292,10 +288,10 @@ def main() -> None:
 
         st.selectbox(
             "Modelo OpenAI",
-            ["gpt-4.1-mini", "gpt-4o-mini"],
+            ["gpt-4o-mini", "gpt-4.1-mini"],
             index=0,
             key="modelo",
-            help="gpt-4.1-mini: mais rápido | gpt-4o-mini: mais preciso"
+            help="gpt-4o-mini: mais preciso | gpt-4.1-mini: mais rápido"
         )
 
         st.slider(
@@ -530,7 +526,9 @@ def main() -> None:
                                 "enabled_agents": enabled_agents,
                                 "collaboration_rounds": collaboration_rounds,
                                 "max_scenarios_per_agent": max_scenarios,
-                                "include_cross_validation": True
+                                "include_cross_validation": True,
+                                "include_negative": st.session_state.get("incluir_negativos", True),
+                                "include_edge_cases": st.session_state.get("casos_extremos", False)
                             }
 
                             # Gerar usando multi-agente (async)

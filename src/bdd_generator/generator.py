@@ -19,16 +19,19 @@ class BDDScenario(BaseModel):
 
     title: str = Field(..., description="Título do cenário")
     steps: List[str] = Field(..., description="Lista de passos do cenário")
-    scenario_type: str = Field(default="positive", description="Tipo do cenário")
+    scenario_type: str = Field(
+        default="positive", description="Tipo do cenário")
 
 
 class BDDResponse(BaseModel):
     """Modelo para resposta completa de geração BDD."""
 
     feature_name: str = Field(..., description="Nome da funcionalidade")
-    feature_description: str = Field(..., description="Descrição da funcionalidade")
+    feature_description: str = Field(...,
+                                     description="Descrição da funcionalidade")
     scenarios: List[BDDScenario] = Field(..., description="Lista de cenários")
-    gherkin_content: str = Field(..., description="Conteúdo completo em Gherkin")
+    gherkin_content: str = Field(...,
+                                 description="Conteúdo completo em Gherkin")
 
 
 class BDDGenerator:
@@ -86,22 +89,42 @@ Funcionalidade: [Nome da funcionalidade]
             include_negative: Se deve incluir cenários negativos
             include_edge_cases: Se deve incluir casos extremos
         """
-        prompt = f"""Gere {num_scenarios} cenários BDD para a seguinte história:
+        # Contexto: Prompt mais específico e assertivo sobre o número de cenários
+        prompt = f"""IMPORTANTE: Gere EXATAMENTE {num_scenarios} cenário(s) BDD para a seguinte história:
 
 {user_story}
 
-Requisitos:
-- Gere cenários claros e testáveis
+REQUISITOS OBRIGATÓRIOS:
+- Gere EXATAMENTE {num_scenarios} cenário(s), nem mais nem menos
 - Use português brasileiro
-- Inclua pelo menos 1 cenário de sucesso"""
+- Cenários claros e testáveis
+- Formato Gherkin correto"""
 
-        if include_negative:
-            prompt += "\n- Inclua cenários de erro/validação"
+        # Configurações específicas de tipos de cenários
+        scenario_types = []
+        if num_scenarios == 1:
+            scenario_types.append("1 cenário de sucesso (happy path)")
+        else:
+            scenario_types.append("pelo menos 1 cenário de sucesso")
 
-        if include_edge_cases:
-            prompt += "\n- Inclua casos extremos/limite"
+            if include_negative:
+                scenario_types.append("cenários de erro/validação/falha")
 
-        prompt += "\n\nRetorne apenas o conteúdo Gherkin formatado."
+            if include_edge_cases:
+                scenario_types.append(
+                    "casos extremos/limite/valores limítrofes")
+
+        if scenario_types:
+            prompt += f"\n- Incluir: {', '.join(scenario_types)}"
+
+        prompt += f"""
+
+FORMATO ESPERADO:
+- Funcionalidade: [nome]
+- Exatamente {num_scenarios} cenário(s) numerado(s)
+- Cada cenário com: Dado, Quando, Então
+
+Retorne apenas o conteúdo Gherkin formatado. NÃO gere mais que {num_scenarios} cenário(s)."""
 
         return prompt
 
@@ -129,7 +152,8 @@ Requisitos:
             Exception: Se houver erro na chamada da API
         """
         try:
-            logger.info(f"Gerando {num_scenarios} cenários BDD para: {user_story[:50]}...")
+            logger.info(
+                f"Gerando {num_scenarios} cenários BDD para: {user_story[:50]}...")
 
             # Criar prompts
             system_prompt = self._create_system_prompt()
@@ -151,12 +175,21 @@ Requisitos:
             # Extrair conteúdo
             gherkin_content = response.choices[0].message.content.strip()
 
+            # Contexto: Remover blocos de código markdown se presentes
+            if gherkin_content.startswith("```gherkin"):
+                gherkin_content = gherkin_content.replace(
+                    "```gherkin", "").replace("```", "").strip()
+            elif gherkin_content.startswith("```"):
+                gherkin_content = gherkin_content.replace("```", "").strip()
+
             # Processar resposta
             feature_name = self._extract_feature_name(gherkin_content)
-            feature_description = self._extract_feature_description(gherkin_content)
+            feature_description = self._extract_feature_description(
+                gherkin_content)
             scenarios = self._parse_scenarios(gherkin_content)
 
-            logger.info(f"Cenários gerados com sucesso: {len(scenarios)} cenários")
+            logger.info(
+                f"Cenários gerados com sucesso: {len(scenarios)} cenários")
 
             return BDDResponse(
                 feature_name=feature_name,
@@ -205,7 +238,8 @@ Requisitos:
         for line in lines:
             line = line.strip()
 
-            if line.startswith("Cenário:"):
+            if line.startswith("Cenário"):
+                # Contexto: Aceitar tanto "Cenário:" quanto "Cenário 1:", "Cenário 2:", etc.
                 # Salvar cenário anterior se existir
                 if current_scenario:
                     scenarios.append(
@@ -218,8 +252,11 @@ Requisitos:
                         )
                     )
 
-                # Iniciar novo cenário
-                current_scenario = line.replace("Cenário:", "").strip()
+                # Iniciar novo cenário - extrair título após ":"
+                if ":" in line:
+                    current_scenario = line.split(":", 1)[1].strip()
+                else:
+                    current_scenario = line.replace("Cenário", "").strip()
                 current_steps = []
 
             elif line.startswith(("Dado", "Quando", "Então", "E", "Mas")):
@@ -231,7 +268,8 @@ Requisitos:
                 BDDScenario(
                     title=current_scenario,
                     steps=current_steps.copy(),
-                    scenario_type=self._determine_scenario_type(current_scenario, current_steps),
+                    scenario_type=self._determine_scenario_type(
+                        current_scenario, current_steps),
                 )
             )
 
@@ -242,7 +280,8 @@ Requisitos:
         title_lower = title.lower()
         steps_text = " ".join(steps).lower()
 
-        negative_keywords = ["erro", "inválido", "falha", "negativo", "incorreto"]
+        negative_keywords = ["erro", "inválido",
+                             "falha", "negativo", "incorreto"]
         edge_keywords = ["limite", "extremo", "máximo", "mínimo", "vazio"]
 
         if any(keyword in title_lower or keyword in steps_text for keyword in negative_keywords):

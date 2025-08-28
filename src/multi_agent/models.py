@@ -60,6 +60,14 @@ class CollaborationConfig(BaseModel):
         default=True,
         description="Se agentes devem validar cenários de outros"
     )
+    include_negative: bool = Field(
+        default=False,
+        description="Se deve incluir cenários negativos/erro"
+    )
+    include_edge_cases: bool = Field(
+        default=False,
+        description="Se deve incluir casos extremos/limite"
+    )
 
 
 class MultiAgentResponse(BaseModel):
