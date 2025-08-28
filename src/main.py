@@ -7,7 +7,7 @@ de cenários BDD usando IA.
 import streamlit as st
 import logging
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from bdd_generator import BDDGenerator, OpenAIClientWrapper, OpenAIConfig
 from multi_agent import MultiAgentOrchestrator, CollaborationConfig, AgentRole
@@ -62,11 +62,14 @@ async def generate_multi_agent_bdd_scenarios(
         # Gerar cenários
         response = await orchestrator.generate_bdd_scenarios(user_story, collaboration_config)
 
+        # Formatar cenários com a mesma estrutura do single agent
+        scenarios_formatted = _format_scenarios_for_display(
+            response.consolidated_scenarios)
+
         # Formatar resposta para exibição
         formatted_output = f"""# 🤖 Cenários BDD - Geração Multi-Agente
 
-## 📝 Funcionalidade
-**{response.feature_name}**
+## 📝 Funcionalidade: {response.feature_name}
 
 {response.feature_description}
 
@@ -74,7 +77,7 @@ async def generate_multi_agent_bdd_scenarios(
 
 ## 🎯 Cenários Gerados
 
-{response.gherkin_content}
+{scenarios_formatted}
 
 ---
 
@@ -84,11 +87,12 @@ async def generate_multi_agent_bdd_scenarios(
 **Total de Cenários:** {response.collaboration_summary['total_scenarios_generated']}
 
 ### 💡 Principais Insights:
-{chr(10).join([f"• {insight}" for insight in response.collaboration_summary['key_insights'][:5]])}
+
+{chr(10).join([f"• {insight}" for insight in response.collaboration_summary['key_insights'][:5]]).replace(chr(10), chr(10) + chr(10))}
 
 ### ⚠️ Preocupações Identificadas:
-{chr(10).join(
-            [f"• {concern}" for concern in response.collaboration_summary['main_concerns'][:3]])}
+
+{chr(10).join([f"• {concern}" for concern in response.collaboration_summary['main_concerns'][:3]]).replace(chr(10), chr(10) + chr(10))}
 
 ---
 
@@ -105,6 +109,59 @@ async def generate_multi_agent_bdd_scenarios(
     except Exception as e:
         logger.error(f"Erro na geração multi-agente: {str(e)}")
         raise
+
+
+def _format_scenarios_for_display(scenarios: List[str]) -> str:
+    """
+    Formata cenários para exibição com a mesma estrutura do single agent.
+
+    Args:
+        scenarios: Lista de cenários brutos
+
+    Returns:
+        Cenários formatados no estilo BDD
+    """
+    if not scenarios:
+        return "Nenhum cenário foi gerado."
+
+    formatted_lines = []
+
+    for i, scenario in enumerate(scenarios, 1):
+        # Parse do cenário para extrair título e passos
+        lines = scenario.strip().split('\n')
+
+        # Procurar pelo título do cenário
+        title = f"Cenário {i}"
+        steps = []
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Se a linha contém "Cenário:" é o título
+            if "cenário:" in line.lower():
+                title = line.replace("Cenário:", "").replace(
+                    "cenário:", "").strip()
+            # Se a linha começa com palavras-chave BDD, é um passo
+            elif line.lower().startswith(("dado", "quando", "então", "e ", "mas ")):
+                steps.append(line)
+            # Outras linhas podem ser parte do contexto
+            else:
+                if line and not line.startswith("#"):
+                    steps.append(line)
+
+        # Formatar o cenário
+        formatted_lines.append(f"### Cenário {i}: {title}")
+        formatted_lines.append("")  # Linha em branco
+
+        # Adicionar cada passo com indentação
+        for step in steps:
+            formatted_lines.append(f"    {step}")
+
+        formatted_lines.append("")  # Linha em branco entre cenários
+
+    return "\n".join(formatted_lines)
 
 
 def generate_bdd_scenarios(
@@ -181,90 +238,6 @@ def main() -> None:
         layout="wide",
         initial_sidebar_state="expanded",
     )
-
-    # CSS customizado para design clean
-    st.markdown("""
-    <style>
-        /* Remove padding padrão */
-        .main > div {
-            padding-top: 1rem;
-        }
-
-        /* Estilo clean para inputs */
-        .stTextInput > div > div > input {
-            border-radius: 8px;
-            border: 1.5px solid #E8EAED;
-            padding: 12px 16px;
-            font-size: 14px;
-        }
-
-        .stTextInput > div > div > input:focus {
-            border-color: #4285F4;
-            box-shadow: 0 0 0 1px #4285F4;
-        }
-
-        /* Estilo clean para textarea */
-        .stTextArea > div > div > textarea {
-            border-radius: 8px;
-            border: 1.5px solid #E8EAED;
-            padding: 16px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .stTextArea > div > div > textarea:focus {
-            border-color: #4285F4;
-            box-shadow: 0 0 0 1px #4285F4;
-        }
-
-        /* Botão principal clean */
-        .stButton > button {
-            border-radius: 8px;
-            border: none;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-weight: 500;
-            padding: 12px 24px;
-            font-size: 14px;
-            transition: all 0.2s ease;
-        }
-
-        .stButton > button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        /* Selectbox clean */
-        .stSelectbox > div > div > div {
-            border-radius: 8px;
-            border: 1.5px solid #E8EAED;
-        }
-
-        /* Checkbox clean */
-        .stCheckbox > label {
-            font-size: 14px;
-            color: #2C3E50;
-        }
-
-        /* Sidebar clean */
-        .css-1d391kg {
-            background-color: #FAFBFC;
-            border-right: 1px solid #F1F3F4;
-        }
-
-        /* Remove decorações desnecessárias */
-        .css-18e3th9 {
-            padding-top: 1rem;
-        }
-
-        /* Estilo clean para alertas */
-        .stAlert {
-            border-radius: 8px;
-            border: none;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-    </style>
-    """, unsafe_allow_html=True)
 
     # Header clean e minimalista
     st.markdown("""
